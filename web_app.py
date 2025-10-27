@@ -30,24 +30,25 @@ plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 
 # 应用标题
-st.title("📈 加密货币形态扫描器 - 专业版")
+st.title("📈 加密货币形态扫描器 - 全盘扫描版")
 st.markdown("""
 <div style="background-color:#f0f2f6;padding:20px;border-radius:10px;margin-bottom:20px;">
-<h3 style="color:#1f77b4;margin:0;">🎯 核心功能</h3>
+<h3 style="color:#1f77b4;margin:0;">🎯 全盘扫描功能</h3>
 <ul style="color:#333;">
-<li><b>双模式扫描</b>: 200根K线 + 400根K线 | 自动去重</li>
-<li><b>时间框架</b>: 15分钟/1小时/4小时/1天</li>
-<li><b>形态识别</b>: 三角形 | 通道 | 楔形 | 旗形</li>
-<li><b>数据源</b>: Gate.io API实时数据</li>
+<li><b>多时间框架</b>: 同时扫描15分钟/1小时/4小时/1天</li>
+<li><b>多K线模式</b>: 同时使用200根和400根K线分析</li>
+<li><b>智能去重</b>: 自动过滤重复形态，显示最佳结果</li>
+<li><b>实时数据</b>: Gate.io API实时行情</li>
 </ul>
 </div>
 """, unsafe_allow_html=True)
 
-class WebPatternScanner:
+class CompletePatternScanner:
     def __init__(self):
         self.base_url = "https://api.gateio.ws/api/v4"
         self.volume_symbols = self.get_top_spot_by_volume(50)
-        self.timeframes = ["15m", "1h", "4h", "1d"]
+        self.all_timeframes = ["15m", "1h", "4h", "1d"]
+        self.all_kline_counts = [200, 400]
         self.pattern_scores = {
             "对称三角形": 95, "上升三角形": 95, "下降三角形": 95,
             "上升通道": 90, "下降通道": 90,
@@ -55,6 +56,7 @@ class WebPatternScanner:
             "看涨旗形": 88, "看跌旗形": 88
         }
         self.scan_results = []
+        self.seen_patterns = set()
 
     def get_top_spot_by_volume(self, limit=50):
         """获取现货成交额前50的加密货币"""
@@ -96,7 +98,9 @@ class WebPatternScanner:
             "BTC_USDT", "ETH_USDT", "BNB_USDT", "SOL_USDT", "XRP_USDT",
             "ADA_USDT", "AVAX_USDT", "DOGE_USDT", "DOT_USDT", "LINK_USDT",
             "MATIC_USDT", "LTC_USDT", "ATOM_USDT", "ETC_USDT", "XLM_USDT",
-            "BCH_USDT", "FIL_USDT", "ALGO_USDT", "VET_USDT", "THETA_USDT"
+            "BCH_USDT", "FIL_USDT", "ALGO_USDT", "VET_USDT", "THETA_USDT",
+            "TRX_USDT", "EOS_USDT", "XMR_USDT", "XTZ_USDT", "SAND_USDT",
+            "MANA_USDT", "GALA_USDT", "ENJ_USDT", "CHZ_USDT", "BAT_USDT"
         ]
         return backup_symbols[:limit]
 
@@ -664,71 +668,125 @@ class WebPatternScanner:
         except Exception as e:
             st.warning(f"绘制趋势线失败: {e}")
 
-    def scan_single_symbol(self, symbol, timeframe, kline_count):
-        """扫描单个币种"""
+    def scan_single_symbol_complete(self, symbol, selected_timeframes, selected_kline_counts):
+        """完整扫描单个币种 - 所有时间框架和K线数量"""
         try:
-            with st.spinner(f'扫描 {symbol} ({timeframe})...'):
-                df = self.get_spot_candle_data(symbol, timeframe, kline_count)
-                if df is None or len(df) < 200:
-                    return None
-                
-                pattern_type, pattern_score, swing_highs, swing_lows, pattern_data = self.detect_all_patterns(df, kline_count)
-                
-                if pattern_type:
-                    chart_buf = self.create_chart(
-                        df, symbol, timeframe, pattern_type, pattern_score,
-                        swing_highs, swing_lows, pattern_data, kline_count
-                    )
-                    
-                    result = {
-                        'symbol': symbol,
-                        'timeframe': timeframe,
-                        'pattern': pattern_type,
-                        'score': pattern_score,
-                        'price': df['Close'].iloc[-1],
-                        'kline_count': kline_count,
-                        'swing_highs': len(swing_highs),
-                        'swing_lows': len(swing_lows),
-                        'chart': chart_buf,
-                        'timestamp': datetime.now()
-                    }
-                    
-                    return result
+            all_results = []
             
-            return None
+            for timeframe in selected_timeframes:
+                for kline_count in selected_kline_counts:
+                    with st.spinner(f'扫描 {symbol} ({timeframe}, {kline_count}K)...'):
+                        df = self.get_spot_candle_data(symbol, timeframe, kline_count)
+                        if df is None or len(df) < 200:
+                            continue
+                        
+                        pattern_type, pattern_score, swing_highs, swing_lows, pattern_data = self.detect_all_patterns(df, kline_count)
+                        
+                        if pattern_type:
+                            # 创建唯一标识避免重复
+                            pattern_key = f"{symbol}_{timeframe}_{pattern_type}"
+                            if pattern_key not in self.seen_patterns:
+                                self.seen_patterns.add(pattern_key)
+                                
+                                chart_buf = self.create_chart(
+                                    df, symbol, timeframe, pattern_type, pattern_score,
+                                    swing_highs, swing_lows, pattern_data, kline_count
+                                )
+                                
+                                result = {
+                                    'symbol': symbol,
+                                    'timeframe': timeframe,
+                                    'pattern': pattern_type,
+                                    'score': pattern_score,
+                                    'price': df['Close'].iloc[-1],
+                                    'kline_count': kline_count,
+                                    'swing_highs': len(swing_highs),
+                                    'swing_lows': len(swing_lows),
+                                    'chart': chart_buf,
+                                    'timestamp': datetime.now()
+                                }
+                                
+                                all_results.append(result)
+            
+            # 按得分排序
+            all_results.sort(key=lambda x: x['score'], reverse=True)
+            return all_results
             
         except Exception as e:
             st.error(f"扫描失败: {e}")
-            return None
+            return []
+
+    def run_complete_scan(self, symbols, selected_timeframes, selected_kline_counts):
+        """运行完整扫描"""
+        total_combinations = len(symbols) * len(selected_timeframes) * len(selected_kline_counts)
+        st.info(f"🔍 即将扫描 {len(symbols)} 个币种 × {len(selected_timeframes)} 个时间框架 × {len(selected_kline_counts)} 种K线数量 = {total_combinations} 种组合")
+        
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        all_results = []
+        completed = 0
+        
+        for i, symbol in enumerate(symbols):
+            status_text.text(f"扫描中: {symbol} ({i+1}/{len(symbols)})")
+            
+            symbol_results = self.scan_single_symbol_complete(symbol, selected_timeframes, selected_kline_counts)
+            all_results.extend(symbol_results)
+            
+            completed += 1
+            progress_bar.progress(completed / len(symbols))
+            
+            # 避免API限制
+            time.sleep(1)
+        
+        progress_bar.empty()
+        status_text.empty()
+        
+        # 按得分排序
+        all_results.sort(key=lambda x: x['score'], reverse=True)
+        return all_results
 
 # 初始化扫描器
 @st.cache_resource
 def get_scanner():
-    return WebPatternScanner()
+    return CompletePatternScanner()
 
 scanner = get_scanner()
 
 # 侧边栏
-st.sidebar.title("⚙️ 扫描设置")
+st.sidebar.title("⚙️ 全盘扫描设置")
 
 # 扫描模式选择
 scan_mode = st.sidebar.radio("选择扫描模式", 
-                           ["单个币种扫描", "批量扫描前10", "批量扫描前50"])
+                           ["单个币种完整扫描", "批量完整扫描前10", "批量完整扫描前50"])
 
-# 时间框架选择
-timeframe = st.sidebar.selectbox("选择时间框架", 
-                               scanner.timeframes, 
-                               index=1)
+# 时间框架选择 - 多选
+st.sidebar.markdown("### 📊 时间框架选择")
+selected_timeframes = st.sidebar.multiselect(
+    "选择要扫描的时间框架",
+    scanner.all_timeframes,
+    default=scanner.all_timeframes,
+    help="可以选择多个时间框架同时扫描"
+)
 
-# K线数量选择
-kline_count = st.sidebar.selectbox("选择K线数量", 
-                                 [200, 400], 
-                                 index=0,
-                                 help="200根K线: 短期形态检测\n400根K线: 长期形态检测")
+# K线数量选择 - 多选
+st.sidebar.markdown("### 📈 K线数量选择")
+selected_kline_counts = st.sidebar.multiselect(
+    "选择要扫描的K线数量",
+    scanner.all_kline_counts,
+    default=scanner.all_kline_counts,
+    help="200根K线: 短期形态检测\n400根K线: 长期形态检测"
+)
+
+# 检查选择
+if not selected_timeframes:
+    st.sidebar.warning("⚠️ 请至少选择一个时间框架")
+if not selected_kline_counts:
+    st.sidebar.warning("⚠️ 请至少选择一个K线数量")
 
 # 主扫描区域
-if scan_mode == "单个币种扫描":
-    st.header("🔍 单个币种扫描")
+if scan_mode == "单个币种完整扫描":
+    st.header("🔍 单个币种完整扫描")
     
     col1, col2 = st.columns([1, 3])
     
@@ -738,81 +796,89 @@ if scan_mode == "单个币种扫描":
                             index=0)
     
     with col2:
-        st.info("💡 提示: 选择币种和时间框架后点击开始扫描")
+        st.info(f"💡 将扫描: {len(selected_timeframes)}个时间框架 × {len(selected_kline_counts)}种K线数量")
     
-    if st.button("🚀 开始扫描", type="primary", use_container_width=True):
-        result = scanner.scan_single_symbol(symbol, timeframe, kline_count)
-        
-        if result:
-            st.success(f"🎉 发现有效形态: {result['pattern']} (置信度: {result['score']}%)")
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("当前价格", f"${result['price']:.4f}")
-            with col2:
-                st.metric("形态得分", f"{result['score']}%")
-            with col3:
-                st.metric("K线数量", f"{result['kline_count']}根")
-            
-            # 显示图表
-            if result['chart']:
-                st.image(result['chart'], use_column_width=True)
-            
-            # 保存结果
-            scanner.scan_results.append(result)
-            
+    if st.button("🚀 开始完整扫描", type="primary", use_container_width=True):
+        if not selected_timeframes or not selected_kline_counts:
+            st.error("请先选择时间框架和K线数量")
         else:
-            st.warning("❌ 未发现有效形态")
+            results = scanner.scan_single_symbol_complete(symbol, selected_timeframes, selected_kline_counts)
+            
+            if results:
+                st.success(f"🎉 发现 {len(results)} 个有效形态!")
+                
+                # 显示所有结果
+                for i, result in enumerate(results):
+                    with st.expander(f"{i+1}. {result['symbol']} - {result['timeframe']} - {result['pattern']} (得分: {result['score']}%)", expanded=i==0):
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("当前价格", f"${result['price']:.4f}")
+                        with col2:
+                            st.metric("时间框架", result['timeframe'])
+                        with col3:
+                            st.metric("K线数量", f"{result['kline_count']}根")
+                        with col4:
+                            st.metric("形态得分", f"{result['score']}%")
+                        
+                        # 显示图表
+                        if result['chart']:
+                            st.image(result['chart'], use_column_width=True)
+                
+                # 保存结果
+                scanner.scan_results.extend(results)
+                
+            else:
+                st.warning("❌ 未发现有效形态")
 
 else:
-    st.header("📊 批量扫描")
+    st.header("📊 批量完整扫描")
     
-    limit = 10 if scan_mode == "批量扫描前10" else 50
+    limit = 10 if scan_mode == "批量完整扫描前10" else 50
     symbols_to_scan = scanner.volume_symbols[:limit]
     
-    st.info(f"即将扫描成交额前{limit}的加密货币，时间框架: {timeframe}")
+    total_scans = len(symbols_to_scan) * len(selected_timeframes) * len(selected_kline_counts)
+    st.info(f"🔍 即将扫描 {len(symbols_to_scan)} 个币种 × {len(selected_timeframes)} 个时间框架 × {len(selected_kline_counts)} 种K线数量 = {total_scans} 种组合")
     
-    if st.button("🚀 开始批量扫描", type="primary", use_container_width=True):
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        found_results = []
-        
-        for i, symbol in enumerate(symbols_to_scan):
-            status_text.text(f"扫描中: {symbol} ({i+1}/{len(symbols_to_scan)})")
-            progress_bar.progress((i + 1) / len(symbols_to_scan))
-            
-            result = scanner.scan_single_symbol(symbol, timeframe, kline_count)
-            if result:
-                found_results.append(result)
-            
-            time.sleep(0.5)  # 避免API限制
-        
-        progress_bar.empty()
-        status_text.empty()
-        
-        if found_results:
-            st.success(f"🎉 批量扫描完成! 发现 {len(found_results)} 个有效形态")
-            
-            # 按得分排序
-            found_results.sort(key=lambda x: x['score'], reverse=True)
-            
-            for result in found_results:
-                with st.expander(f"{result['symbol']} - {result['pattern']} ({result['score']}%)", expanded=True):
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("价格", f"${result['price']:.4f}")
-                    with col2:
-                        st.metric("时间框架", result['timeframe'])
-                    with col3:
-                        st.metric("K线数量", f"{result['kline_count']}根")
-                    
-                    if result['chart']:
-                        st.image(result['chart'], use_column_width=True)
-            
-            scanner.scan_results.extend(found_results)
+    if st.button("🚀 开始批量完整扫描", type="primary", use_container_width=True):
+        if not selected_timeframes or not selected_kline_counts:
+            st.error("请先选择时间框架和K线数量")
         else:
-            st.warning("❌ 批量扫描未发现任何有效形态")
+            results = scanner.run_complete_scan(symbols_to_scan, selected_timeframes, selected_kline_counts)
+            
+            if results:
+                st.success(f"🎉 批量扫描完成! 发现 {len(results)} 个有效形态")
+                
+                # 显示统计信息
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    timeframes_found = len(set(r['timeframe'] for r in results))
+                    st.metric("涉及时间框架", f"{timeframes_found}个")
+                with col2:
+                    patterns_found = len(set(r['pattern'] for r in results))
+                    st.metric("发现形态种类", f"{patterns_found}种")
+                with col3:
+                    avg_score = np.mean([r['score'] for r in results])
+                    st.metric("平均置信度", f"{avg_score:.1f}%")
+                
+                # 显示所有结果
+                for i, result in enumerate(results):
+                    with st.expander(f"{i+1}. {result['symbol']} - {result['timeframe']} - {result['pattern']} (得分: {result['score']}%)", expanded=i<3):
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("价格", f"${result['price']:.4f}")
+                        with col2:
+                            st.metric("时间框架", result['timeframe'])
+                        with col3:
+                            st.metric("K线数量", f"{result['kline_count']}根")
+                        with col4:
+                            st.metric("形态得分", f"{result['score']}%")
+                        
+                        if result['chart']:
+                            st.image(result['chart'], use_column_width=True)
+                
+                scanner.scan_results.extend(results)
+            else:
+                st.warning("❌ 批量扫描未发现任何有效形态")
 
 # 显示历史结果
 if scanner.scan_results:
@@ -821,31 +887,37 @@ if scanner.scan_results:
     recent_results = scanner.scan_results[-10:]  # 显示最近10个结果
     for i, result in enumerate(reversed(recent_results)):
         with st.sidebar.expander(f"{result['symbol']} - {result['pattern']}", expanded=False):
+            st.write(f"时间框架: {result['timeframe']}")
             st.write(f"得分: {result['score']}%")
             st.write(f"价格: ${result['price']:.4f}")
+            st.write(f"K线: {result['kline_count']}根")
             st.write(f"时间: {result['timestamp'].strftime('%H:%M:%S')}")
 
 # 使用说明
-with st.sidebar.expander("📖 使用说明", expanded=False):
+with st.sidebar.expander("📖 全盘扫描说明", expanded=False):
     st.markdown("""
-    **形态说明:**
-    - 🟢 对称三角形: 整理形态，突破方向不确定
-    - 🔺 上升三角形: 看涨形态，通常向上突破
-    - 🔻 下降三角形: 看跌形态，通常向下突破
-    - 📈 上升通道: 趋势延续，适合低多
-    - 📉 下降通道: 趋势延续，适合高空
+    **全盘扫描优势:**
+    - 🔄 同时扫描多个时间框架
+    - 📊 同时使用不同K线数量
+    - 🎯 智能去重，显示最佳结果
+    - ⚡ 自动过滤低质量形态
     
-    **建议:**
-    - 结合多个时间框架确认
-    - 等待突破确认再入场
-    - 设置合理的止损位
+    **建议配置:**
+    - 初次扫描: 选择所有时间框架和K线数量
+    - 日常监控: 选择1h+4h时间框架，400根K线
+    - 快速扫描: 选择1个时间框架，200根K线
+    
+    **注意:**
+    - 扫描数量越多，耗时越长
+    - 免费版Streamlit有资源限制
+    - 建议分批扫描重要币种
     """)
 
 # 页脚
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>"
-    "加密货币形态扫描器 | 数据来源: Gate.io API | 注意: 投资有风险，入市需谨慎"
+    "加密货币形态扫描器 - 全盘扫描版 | 数据来源: Gate.io API | 注意: 投资有风险，入市需谨慎"
     "</div>",
     unsafe_allow_html=True
 )
