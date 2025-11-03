@@ -37,7 +37,7 @@ st.markdown("""
 <ul style="color:#333;">
 <li><b>严格验证</b>: 需要3个高点和2个低点依次出现</li>
 <li><b>精确趋势线</b>: 所有摆动点必须在趋势线上 (R²>0.95)</li>
-<li><b>大规模扫描</b>: 支持前200币种完整分析</li>
+<li><b>指定币种</b>: 扫描104个精选加密货币</li>
 <li><b>图表缓存</b>: 历史结果可重复查看</li>
 </ul>
 </div>
@@ -46,7 +46,8 @@ st.markdown("""
 class StrictPatternScanner:
     def __init__(self):
         self.base_url = "https://api.gateio.ws/api/v4"
-        self.volume_symbols = self.get_top_spot_by_volume(200)  # 改为200
+        # 使用指定的104个币种列表
+        self.volume_symbols = self.get_specified_symbols()
         self.all_timeframes = ["15m", "1h", "4h", "1d"]
         self.all_kline_counts = [200, 400]
         self.pattern_scores = {
@@ -59,86 +60,32 @@ class StrictPatternScanner:
         self.seen_patterns = set()
         self.chart_cache = {}  # 图表缓存
 
-    def get_top_spot_by_volume(self, limit=200):  # 改为200
-        """获取现货成交额前200的加密货币"""
-        try:
-            with st.spinner(f'🔄 获取加密货币列表 (前{limit})...'):
-                url = f"{self.base_url}/spot/tickers"
-                response = requests.get(url, timeout=20)  # 增加超时时间
-                
-                if response.status_code == 200:
-                    tickers_data = response.json()
-                    usdt_pairs = []
-                    for ticker in tickers_data:
-                        currency_pair = ticker.get('currency_pair', '')
-                        if currency_pair.endswith('_USDT'):
-                            quote_volume = float(ticker.get('quote_volume', 0))
-                            change_percent = float(ticker.get('change_percent', 0))
-                            usdt_pairs.append({
-                                'symbol': currency_pair,
-                                'quote_volume': quote_volume,
-                                'change_percent': change_percent
-                            })
-                    
-                    if not usdt_pairs:
-                        return self.get_backup_symbols(limit)
-                    
-                    usdt_pairs.sort(key=lambda x: x['quote_volume'], reverse=True)
-                    symbols = [item['symbol'] for item in usdt_pairs[:limit]]
-                    return symbols
-                else:
-                    return self.get_backup_symbols(limit)
-                    
-        except Exception as e:
-            return self.get_backup_symbols(limit)
-    
-    def get_backup_symbols(self, limit=200):  # 改为200
-        """备用币种列表 - 扩展到200个"""
-        backup_symbols = [
-            "BTC_USDT", "ETH_USDT", "BNB_USDT", "SOL_USDT", "XRP_USDT",
-            "ADA_USDT", "AVAX_USDT", "DOGE_USDT", "DOT_USDT", "LINK_USDT",
-            "MATIC_USDT", "LTC_USDT", "ATOM_USDT", "ETC_USDT", "XLM_USDT",
-            "BCH_USDT", "FIL_USDT", "ALGO_USDT", "VET_USDT", "THETA_USDT",
-            "TRX_USDT", "EOS_USDT", "XMR_USDT", "XTZ_USDT", "SAND_USDT",
-            "MANA_USDT", "GALA_USDT", "ENJ_USDT", "CHZ_USDT", "BAT_USDT",
-            "NEAR_USDT", "FTM_USDT", "EGLD_USDT", "AAVE_USDT", "MKR_USDT",
-            "COMP_USDT", "SNX_USDT", "CRV_USDT", "SUSHI_USDT", "1INCH_USDT",
-            "ZEC_USDT", "DASH_USDT", "WAVES_USDT", "OMG_USDT", "ZIL_USDT",
-            "IOTA_USDT", "ONT_USDT", "QTUM_USDT", "ICX_USDT", "SC_USDT",
-            "ANKR_USDT", "REN_USDT", "CELR_USDT", "ONE_USDT", "HOT_USDT",
-            "IOST_USDT", "STORJ_USDT", "KNC_USDT", "REEF_USDT", "RSR_USDT",
-            "COTI_USDT", "OCEAN_USDT", "BAND_USDT", "NKN_USDT", "LRC_USDT",
-            "AR_USDT", "RLC_USDT", "BAL_USDT", "KAVA_USDT", "SRM_USDT",
-            "YFI_USDT", "UMA_USDT", "RUNE_USDT", "SFP_USDT", "CELO_USDT",
-            "OGN_USDT", "SKL_USDT", "GRT_USDT", "BNT_USDT", "TOMO_USDT",
-            "DENT_USDT", "STMX_USDT", "HIVE_USDT", "DGB_USDT", "STPT_USDT",
-            "CHR_USDT", "ARPA_USDT", "PERL_USDT", "TROY_USDT", "VITE_USDT",
-            "DUSK_USDT", "WRX_USDT", "BTS_USDT", "TFUEL_USDT", "CVC_USDT",
-            "CTSI_USDT", "STRAX_USDT", "AUDIO_USDT", "REQ_USDT", "DATA_USDT",
-            "SXP_USDT", "IRIS_USDT", "CTK_USDT", "UNI_USDT", "RVN_USDT",
-            "SYS_USDT", "FIO_USDT", "DIA_USDT", "BEL_USDT", "WING_USDT",
-            "TRB_USDT", "ORN_USDT", "PSG_USDT", "CITY_USDT", "LIT_USDT",
-            "BADGER_USDT", "ALPHA_USDT", "VIDT_USDT", "AXS_USDT", "SLP_USDT",
-            "SAND_USDT", "MANA_USDT", "GALA_USDT", "ENJ_USDT", "CHZ_USDT",
-            "BAT_USDT", "ANKR_USDT", "REN_USDT", "CELR_USDT", "ONE_USDT",
-            "HOT_USDT", "IOST_USDT", "STORJ_USDT", "KNC_USDT", "REEF_USDT",
-            "RSR_USDT", "COTI_USDT", "OCEAN_USDT", "BAND_USDT", "NKN_USDT",
-            "LRC_USDT", "AR_USDT", "RLC_USDT", "BAL_USDT", "KAVA_USDT",
-            "SRM_USDT", "YFI_USDT", "UMA_USDT", "RUNE_USDT", "SFP_USDT",
-            "CELO_USDT", "OGN_USDT", "SKL_USDT", "GRT_USDT", "BNT_USDT",
-            "TOMO_USDT", "DENT_USDT", "STMX_USDT", "HIVE_USDT", "DGB_USDT",
-            "STPT_USDT", "CHR_USDT", "ARPA_USDT", "PERL_USDT", "TROY_USDT",
-            "VITE_USDT", "DUSK_USDT", "WRX_USDT", "BTS_USDT", "TFUEL_USDT",
-            "CVC_USDT", "CTSI_USDT", "STRAX_USDT", "AUDIO_USDT", "REQ_USDT",
-            "DATA_USDT", "SXP_USDT", "IRIS_USDT", "CTK_USDT", "UNI_USDT",
-            "RVN_USDT", "SYS_USDT", "FIO_USDT", "DIA_USDT", "BEL_USDT",
-            "WING_USDT", "TRB_USDT", "ORN_USDT", "PSG_USDT", "CITY_USDT",
-            "LIT_USDT", "BADGER_USDT", "ALPHA_USDT", "VIDT_USDT", "AXS_USDT",
-            "SLP_USDT", "SAND_USDT", "MANA_USDT", "GALA_USDT", "ENJ_USDT"
+    def get_specified_symbols(self):
+        """使用指定的104个币种列表"""
+        specified_symbols = [
+            "ETHUSDT", "BTCUSDT", "SOLUSDT", "DOGEUSDT", "ZKUSDT",
+            "ASTERUSDT", "XRPUSDT", "JELLYJELLYUSDT", "PUMPUSDT", "HYPEUSDT",
+            "VIRTUALUSDT", "LABUSDT", "BNBUSDT", "TRUMPUSDT", "MINAUSDT",
+            "PEPEUSDT", "LINKUSDT", "XPLUSDT", "FILUSDT", "LTCUSDT",
+            "ICPUSDT", "SUIUSDT", "COAIUSDT", "AAVEUSDT", "ADAUSDT",
+            "BCHUSDT", "XAUTUSDT", "YBUSDT", "TAOUSDT", "LPTUSDT",
+            "OKBUSDT", "WLDUSDT", "ATUSDT", "HUSDT", "SNXUSDT",
+            "GIGGLEUSDT", "PENGUUSDT", "AVAXUSDT", "STRKUSDT", "CRVUSDT",
+            "PIGGYUSDT", "WLFIUSDT", "AI16ZUSDT", "CCUSDT", "AUCTIONUSDT",
+            "ENAUSDT", "HBARUSDT", "UNIUSDT", "NMRUSDT", "WIFUSDT",
+            "KGENUSDT", "DOTUSDT", "OGUSDT", "AVNTUSDT", "KITEUSDT",
+            "OPUSDT", "ETHFIUSDT", "AIXBTUSDT", "LINEAUSDT", "BIOUSDT",
+            "APRUSDT", "ETCUSDT", "ARBUSDT", "NEARUSDT", "SHIBUSDT",
+            "IPUSDT", "USELESSUSDT", "APTUSDT", "CELOUSDT", "BONKUSDT",
+            "LDOUSDT", "DYDXUSDT", "ARUSDT", "ORDIUSDT", "EIGENUSDT",
+            "OLUSDT", "MERLUSDT", "TIAUSDT", "BLUAIUSDT", "TRXUSDT",
+            "ONDOUSDT", "BATUSDT", "TONUSDT", "FARTCOINUSDT", "METUSDT",
+            "ZORAUSDT", "XLMUSDT", "DOODUSDT", "YGGUSDT", "KAITOUSDT",
+            "PNUTUSDT", "MOODENGUSDT", "ENSOUSDT", "RECALLUSDT", "TRBUSDT",
+            "CFXUSDT", "FLOKIUSDT", "ATOMUSDT", "ZBTUSDT", "INJUSDT",
+            "JUPUSDT", "SOPHUSDT", "KSMUSDT", "WUSDT"
         ]
-        # 去重并返回前limit个
-        unique_symbols = list(dict.fromkeys(backup_symbols))
-        return unique_symbols[:limit]
+        return specified_symbols
 
     def save_chart_to_cache(self, symbol, timeframe, pattern_type, kline_count, chart_buf):
         """保存图表到缓存"""
@@ -172,12 +119,18 @@ class StrictPatternScanner:
         else:
             st.warning("图表数据已过期，请重新扫描")
 
-    def get_spot_candle_data(self, symbol="BTC_USDT", interval="15m", limit=400):
+    def get_spot_candle_data(self, symbol="BTCUSDT", interval="15m", limit=400):
         """获取现货K线数据"""
         try:
+            # 确保符号格式正确（有些可能需要下划线）
+            formatted_symbol = symbol
+            if "_" not in symbol:
+                # 假设所有币种都是XXXUSDT格式，添加下划线
+                formatted_symbol = symbol.replace("USDT", "_USDT")
+            
             url = f"{self.base_url}/spot/candlesticks"
             params = {
-                'currency_pair': symbol,
+                'currency_pair': formatted_symbol,
                 'interval': interval,
                 'limit': limit
             }
@@ -233,9 +186,12 @@ class StrictPatternScanner:
 
     def generate_realistic_data(self, symbol, interval, limit=400):
         """生成真实模拟数据"""
+        # 为一些主要币种设置更真实的价格
         real_prices = {
-            "BTC_USDT": 45000, "ETH_USDT": 2500, "BNB_USDT": 320,
-            "SOL_USDT": 110, "XRP_USDT": 0.62, "ADA_USDT": 0.48
+            "BTCUSDT": 45000, "ETHUSDT": 2500, "BNBUSDT": 320,
+            "SOLUSDT": 110, "XRPUSDT": 0.62, "ADAUSDT": 0.48,
+            "DOGEUSDT": 0.12, "AVAXUSDT": 35, "DOTUSDT": 7.5,
+            "LINKUSDT": 14, "LTCUSDT": 68, "BCHUSDT": 240
         }
         
         base_price = real_prices.get(symbol, 10)
@@ -934,7 +890,7 @@ st.sidebar.title("⚙️ 严格模式扫描设置")
 
 # 扫描模式选择
 scan_mode = st.sidebar.radio("选择扫描模式", 
-                           ["单个币种完整扫描", "批量完整扫描前50", "批量完整扫描前200"])
+                           ["单个币种完整扫描", "批量完整扫描前50", "批量完整扫描全部(104)"])
 
 # 时间框架选择 - 多选
 st.sidebar.markdown("### 📊 时间框架选择")
@@ -1074,8 +1030,8 @@ else:
     # 确保使用正确的limit
     if scan_mode == "批量完整扫描前50":
         limit = 50
-    else:  # 批量完整扫描前200
-        limit = 200
+    else:  # 批量完整扫描全部(104)
+        limit = len(scanner.volume_symbols)
         
     symbols_to_scan = scanner.volume_symbols[:limit]
     
@@ -1146,8 +1102,8 @@ with st.sidebar.expander("📖 严格模式说明", expanded=False):
     - 📈 所有摆动点必须在趋势线上 (R²>0.95, 最大偏差<0.5%)
     - 📊 使用线性回归计算精确趋势线
     
-    **扫描规模:**
-    - 📊 支持前200币种大规模扫描
+    **扫描币种:**
+    - 📊 扫描指定的104个精选加密货币
     - ⏰ 批量扫描需要较长时间
     - 💾 建议分批扫描重要币种
     
@@ -1161,7 +1117,7 @@ with st.sidebar.expander("📖 严格模式说明", expanded=False):
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>"
-    "加密货币形态扫描器 - 严格模式 | 支持前200币种大规模扫描"
+    "加密货币形态扫描器 - 严格模式 | 扫描104个指定加密货币"
     "</div>",
     unsafe_allow_html=True
 )
