@@ -888,9 +888,9 @@ scanner = get_scanner()
 # 侧边栏
 st.sidebar.title("⚙️ 严格模式扫描设置")
 
-# 扫描模式选择
+# 扫描模式选择 - 只保留批量扫描选项
 scan_mode = st.sidebar.radio("选择扫描模式", 
-                           ["单个币种完整扫描", "批量完整扫描前50", "批量完整扫描全部(104)"])
+                           ["批量完整扫描前50", "批量完整扫描全部(104)"])
 
 # 时间框架选择 - 多选
 st.sidebar.markdown("### 📊 时间框架选择")
@@ -989,96 +989,60 @@ if scanner.scan_results:
     )
 
 # 主扫描区域
-if scan_mode == "单个币种完整扫描":
-    st.header("🔍 单个币种完整扫描")
-    
-    col1, col2 = st.columns([1, 3])
-    
-    with col1:
-        symbol = st.selectbox("选择币种", 
-                            scanner.volume_symbols[:50],
-                            index=0)
-    
-    with col2:
-        st.info(f"💡 将扫描: {len(selected_timeframes)}个时间框架 × {len(selected_kline_counts)}种K线数量")
-        st.warning("🔒 严格模式: 需要3高2低依次出现且所有点在趋势线上 (R²>0.95)")
-    
-    if st.button("🚀 开始完整扫描", type="primary", use_container_width=True):
-        if not selected_timeframes or not selected_kline_counts:
-            st.error("请先选择时间框架和K线数量")
-        else:
-            with st.spinner('扫描中...'):
-                results = scanner.scan_single_symbol_complete(symbol, selected_timeframes, selected_kline_counts)
-            
-            if results:
-                st.success(f"🎉 发现 {len(results)} 个有效形态!")
-                
-                # 显示所有结果
-                for i, result in enumerate(results):
-                    with st.expander(f"{i+1}. {result['symbol']} - {result['timeframe']} - {result['pattern']} (得分: {result['score']}%)", expanded=i==0):
-                        scanner.display_result_with_chart(result)
-                
-                # 保存结果
-                scanner.scan_results.extend(results)
-                
-            else:
-                st.warning("❌ 未发现有效形态 - 严格模式下需要3高2低依次出现且精确在趋势线上")
+st.header("📊 批量完整扫描")
 
-else:
-    st.header("📊 批量完整扫描")
+# 确保使用正确的limit
+if scan_mode == "批量完整扫描前50":
+    limit = 50
+else:  # 批量完整扫描全部(104)
+    limit = len(scanner.volume_symbols)
     
-    # 确保使用正确的limit
-    if scan_mode == "批量完整扫描前50":
-        limit = 50
-    else:  # 批量完整扫描全部(104)
-        limit = len(scanner.volume_symbols)
+symbols_to_scan = scanner.volume_symbols[:limit]
+
+# 显示实际要扫描的币种数量
+actual_scan_count = len(symbols_to_scan)
+st.info(f"🔍 即将扫描 {actual_scan_count} 个币种 × {len(selected_timeframes)} 个时间框架 × {len(selected_kline_counts)} 种K线数量")
+
+total_scans = actual_scan_count * len(selected_timeframes) * len(selected_kline_counts)
+st.warning("🔒 严格模式: 需要3高2低依次出现且所有点在趋势线上 (R²>0.95)")
+st.warning(f"⏰ 预计耗时: 约 {total_scans * 2.5 // 60} 分钟")
+
+if st.button("🚀 开始批量完整扫描", type="primary", use_container_width=True):
+    if not selected_timeframes or not selected_kline_counts:
+        st.error("请先选择时间框架和K线数量")
+    else:
+        # 确保传入正确的symbols列表
+        with st.spinner('批量扫描中，请耐心等待...'):
+            results = scanner.run_complete_scan(symbols_to_scan, selected_timeframes, selected_kline_counts)
         
-    symbols_to_scan = scanner.volume_symbols[:limit]
-    
-    # 显示实际要扫描的币种数量
-    actual_scan_count = len(symbols_to_scan)
-    st.info(f"🔍 即将扫描 {actual_scan_count} 个币种 × {len(selected_timeframes)} 个时间框架 × {len(selected_kline_counts)} 种K线数量")
-    
-    total_scans = actual_scan_count * len(selected_timeframes) * len(selected_kline_counts)
-    st.warning("🔒 严格模式: 需要3高2低依次出现且所有点在趋势线上 (R²>0.95)")
-    st.warning(f"⏰ 预计耗时: 约 {total_scans * 2.5 // 60} 分钟")
-    
-    if st.button("🚀 开始批量完整扫描", type="primary", use_container_width=True):
-        if not selected_timeframes or not selected_kline_counts:
-            st.error("请先选择时间框架和K线数量")
-        else:
-            # 确保传入正确的symbols列表
-            with st.spinner('批量扫描中，请耐心等待...'):
-                results = scanner.run_complete_scan(symbols_to_scan, selected_timeframes, selected_kline_counts)
+        if results:
+            st.success(f"🎉 批量扫描完成! 发现 {len(results)} 个有效形态")
             
-            if results:
-                st.success(f"🎉 批量扫描完成! 发现 {len(results)} 个有效形态")
-                
-                # 显示统计信息
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    timeframes_found = len(set(r['timeframe'] for r in results))
-                    st.metric("涉及时间框架", f"{timeframes_found}个")
-                with col2:
-                    patterns_found = len(set(r['pattern'] for r in results))
-                    st.metric("发现形态种类", f"{patterns_found}种")
-                with col3:
-                    avg_score = np.mean([r['score'] for r in results])
-                    st.metric("平均置信度", f"{avg_score:.1f}%")
-                
-                # 显示扫描的币种范围
-                scanned_symbols = list(set([r['symbol'] for r in results]))
-                if scanned_symbols:
-                    st.info(f"📊 扫描币种范围: 从 {scanned_symbols[0]} 到 {scanned_symbols[-1]}")
-                
-                # 显示所有结果
-                for i, result in enumerate(results):
-                    with st.expander(f"{i+1}. {result['symbol']} - {result['timeframe']} - {result['pattern']} (得分: {result['score']}%)", expanded=i<3):
-                        scanner.display_result_with_chart(result)
-                
-                scanner.scan_results.extend(results)
-            else:
-                st.warning("❌ 批量扫描未发现任何有效形态 - 严格模式下需要3高2低依次出现且精确在趋势线上")
+            # 显示统计信息
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                timeframes_found = len(set(r['timeframe'] for r in results))
+                st.metric("涉及时间框架", f"{timeframes_found}个")
+            with col2:
+                patterns_found = len(set(r['pattern'] for r in results))
+                st.metric("发现形态种类", f"{patterns_found}种")
+            with col3:
+                avg_score = np.mean([r['score'] for r in results])
+                st.metric("平均置信度", f"{avg_score:.1f}%")
+            
+            # 显示扫描的币种范围
+            scanned_symbols = list(set([r['symbol'] for r in results]))
+            if scanned_symbols:
+                st.info(f"📊 扫描币种范围: 从 {scanned_symbols[0]} 到 {scanned_symbols[-1]}")
+            
+            # 显示所有结果
+            for i, result in enumerate(results):
+                with st.expander(f"{i+1}. {result['symbol']} - {result['timeframe']} - {result['pattern']} (得分: {result['score']}%)", expanded=i<3):
+                    scanner.display_result_with_chart(result)
+            
+            scanner.scan_results.extend(results)
+        else:
+            st.warning("❌ 批量扫描未发现任何有效形态 - 严格模式下需要3高2低依次出现且精确在趋势线上")
 
 # 显示历史结果
 if scanner.scan_results:
