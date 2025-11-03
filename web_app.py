@@ -85,14 +85,11 @@ class StrictPatternScanner:
                     
                     usdt_pairs.sort(key=lambda x: x['quote_volume'], reverse=True)
                     symbols = [item['symbol'] for item in usdt_pairs[:limit]]
-                    st.success(f"✅ 成功获取成交额前{len(symbols)}个币种")
                     return symbols
                 else:
-                    st.warning("API请求失败，使用备用列表")
                     return self.get_backup_symbols(limit)
                     
         except Exception as e:
-            st.warning(f"获取实时数据失败，使用备用列表: {e}")
             return self.get_backup_symbols(limit)
     
     def get_backup_symbols(self, limit=200):  # 改为200
@@ -104,7 +101,6 @@ class StrictPatternScanner:
             "BCH_USDT", "FIL_USDT", "ALGO_USDT", "VET_USDT", "THETA_USDT",
             "TRX_USDT", "EOS_USDT", "XMR_USDT", "XTZ_USDT", "SAND_USDT",
             "MANA_USDT", "GALA_USDT", "ENJ_USDT", "CHZ_USDT", "BAT_USDT",
-            # 添加更多常见币种
             "NEAR_USDT", "FTM_USDT", "EGLD_USDT", "AAVE_USDT", "MKR_USDT",
             "COMP_USDT", "SNX_USDT", "CRV_USDT", "SUSHI_USDT", "1INCH_USDT",
             "ZEC_USDT", "DASH_USDT", "WAVES_USDT", "OMG_USDT", "ZIL_USDT",
@@ -197,7 +193,6 @@ class StrictPatternScanner:
             return self.generate_realistic_data(symbol, interval, limit)
                 
         except Exception as e:
-            st.error(f"获取数据失败: {e}")
             return self.generate_realistic_data(symbol, interval, limit)
 
     def process_candle_data(self, data):
@@ -777,7 +772,6 @@ class StrictPatternScanner:
             return buf
             
         except Exception as e:
-            st.error(f"图表创建失败: {e}")
             return None
 
     def draw_trendlines(self, ax, dates_num, pattern_type, pattern_data):
@@ -848,7 +842,7 @@ class StrictPatternScanner:
                 ax.plot([x_min, x_max], [low_y1, low_y2], 'g-', linewidth=2.5, alpha=0.8, label='Lower')
                 
         except Exception as e:
-            st.warning(f"绘制趋势线失败: {e}")
+            pass
 
     def scan_single_symbol_complete(self, symbol, selected_timeframes, selected_kline_counts):
         """完整扫描单个币种 - 所有时间框架和K线数量"""
@@ -857,54 +851,51 @@ class StrictPatternScanner:
             
             for timeframe in selected_timeframes:
                 for kline_count in selected_kline_counts:
-                    with st.spinner(f'扫描 {symbol} ({timeframe}, {kline_count}K)...'):
-                        df = self.get_spot_candle_data(symbol, timeframe, kline_count)
-                        if df is None or len(df) < 200:
-                            continue
-                        
-                        pattern_type, pattern_score, swing_highs, swing_lows, pattern_data = self.detect_all_patterns(df, kline_count)
-                        
-                        if pattern_type:
-                            # 创建唯一标识避免重复
-                            pattern_key = f"{symbol}_{timeframe}_{pattern_type}_{kline_count}"
-                            if pattern_key not in self.seen_patterns:
-                                self.seen_patterns.add(pattern_key)
-                                
-                                chart_buf = self.create_chart(
-                                    df, symbol, timeframe, pattern_type, pattern_score,
-                                    swing_highs, swing_lows, pattern_data, kline_count
-                                )
-                                
-                                # 保存图表到缓存
-                                chart_key = self.save_chart_to_cache(symbol, timeframe, pattern_type, kline_count, chart_buf)
-                                
-                                result = {
-                                    'symbol': symbol,
-                                    'timeframe': timeframe,
-                                    'pattern': pattern_type,
-                                    'score': pattern_score,
-                                    'price': df['Close'].iloc[-1],
-                                    'kline_count': kline_count,
-                                    'swing_highs': len(swing_highs),
-                                    'swing_lows': len(swing_lows),
-                                    'chart_key': chart_key,
-                                    'timestamp': datetime.now()
-                                }
-                                
-                                all_results.append(result)
+                    df = self.get_spot_candle_data(symbol, timeframe, kline_count)
+                    if df is None or len(df) < 200:
+                        continue
+                    
+                    pattern_type, pattern_score, swing_highs, swing_lows, pattern_data = self.detect_all_patterns(df, kline_count)
+                    
+                    if pattern_type:
+                        # 创建唯一标识避免重复
+                        pattern_key = f"{symbol}_{timeframe}_{pattern_type}_{kline_count}"
+                        if pattern_key not in self.seen_patterns:
+                            self.seen_patterns.add(pattern_key)
+                            
+                            chart_buf = self.create_chart(
+                                df, symbol, timeframe, pattern_type, pattern_score,
+                                swing_highs, swing_lows, pattern_data, kline_count
+                            )
+                            
+                            # 保存图表到缓存
+                            chart_key = self.save_chart_to_cache(symbol, timeframe, pattern_type, kline_count, chart_buf)
+                            
+                            result = {
+                                'symbol': symbol,
+                                'timeframe': timeframe,
+                                'pattern': pattern_type,
+                                'score': pattern_score,
+                                'price': df['Close'].iloc[-1],
+                                'kline_count': kline_count,
+                                'swing_highs': len(swing_highs),
+                                'swing_lows': len(swing_lows),
+                                'chart_key': chart_key,
+                                'timestamp': datetime.now()
+                            }
+                            
+                            all_results.append(result)
             
             # 按得分排序
             all_results.sort(key=lambda x: x['score'], reverse=True)
             return all_results
             
         except Exception as e:
-            st.error(f"扫描失败: {e}")
             return []
 
     def run_complete_scan(self, symbols, selected_timeframes, selected_kline_counts):
         """运行完整扫描"""
         total_combinations = len(symbols) * len(selected_timeframes) * len(selected_kline_counts)
-        st.info(f"🔍 即将扫描 {len(symbols)} 个币种 × {len(selected_timeframes)} 个时间框架 × {len(selected_kline_counts)} 种K线数量 = {total_combinations} 种组合")
         
         progress_bar = st.progress(0)
         status_text = st.empty()
@@ -922,7 +913,7 @@ class StrictPatternScanner:
             progress_bar.progress(completed / len(symbols))
             
             # 避免API限制，增加扫描间隔
-            time.sleep(1.5)  # 增加到1.5秒
+            time.sleep(1.5)
         
         progress_bar.empty()
         status_text.empty()
@@ -943,7 +934,7 @@ st.sidebar.title("⚙️ 严格模式扫描设置")
 
 # 扫描模式选择
 scan_mode = st.sidebar.radio("选择扫描模式", 
-                           ["单个币种完整扫描", "批量完整扫描前50", "批量完整扫描前200"])  # 更新选项
+                           ["单个币种完整扫描", "批量完整扫描前50", "批量完整扫描前200"])
 
 # 时间框架选择 - 多选
 st.sidebar.markdown("### 📊 时间框架选择")
@@ -960,6 +951,10 @@ selected_kline_counts = st.sidebar.multiselect(
     scanner.all_kline_counts,
     default=scanner.all_kline_counts
 )
+
+# 显示当前币种列表信息
+st.sidebar.markdown("### 📊 币种列表信息")
+st.sidebar.write(f"当前币种列表数量: {len(scanner.volume_symbols)}")
 
 # 历史记录管理
 st.sidebar.markdown("### 📋 历史记录管理")
@@ -1045,7 +1040,7 @@ if scan_mode == "单个币种完整扫描":
     
     with col1:
         symbol = st.selectbox("选择币种", 
-                            scanner.volume_symbols[:50],  # 显示前50个供选择
+                            scanner.volume_symbols[:50],
                             index=0)
     
     with col2:
@@ -1056,7 +1051,8 @@ if scan_mode == "单个币种完整扫描":
         if not selected_timeframes or not selected_kline_counts:
             st.error("请先选择时间框架和K线数量")
         else:
-            results = scanner.scan_single_symbol_complete(symbol, selected_timeframes, selected_kline_counts)
+            with st.spinner('扫描中...'):
+                results = scanner.scan_single_symbol_complete(symbol, selected_timeframes, selected_kline_counts)
             
             if results:
                 st.success(f"🎉 发现 {len(results)} 个有效形态!")
@@ -1075,19 +1071,29 @@ if scan_mode == "单个币种完整扫描":
 else:
     st.header("📊 批量完整扫描")
     
-    limit = 50 if scan_mode == "批量完整扫描前50" else 200  # 更新限制
+    # 确保使用正确的limit
+    if scan_mode == "批量完整扫描前50":
+        limit = 50
+    else:  # 批量完整扫描前200
+        limit = 200
+        
     symbols_to_scan = scanner.volume_symbols[:limit]
     
-    total_scans = len(symbols_to_scan) * len(selected_timeframes) * len(selected_kline_counts)
-    st.info(f"🔍 即将扫描 {len(symbols_to_scan)} 个币种 × {len(selected_timeframes)} 个时间框架 × {len(selected_kline_counts)} 种K线数量 = {total_scans} 种组合")
+    # 显示实际要扫描的币种数量
+    actual_scan_count = len(symbols_to_scan)
+    st.info(f"🔍 即将扫描 {actual_scan_count} 个币种 × {len(selected_timeframes)} 个时间框架 × {len(selected_kline_counts)} 种K线数量")
+    
+    total_scans = actual_scan_count * len(selected_timeframes) * len(selected_kline_counts)
     st.warning("🔒 严格模式: 需要3高2低依次出现且所有点在趋势线上 (R²>0.95)")
-    st.warning(f"⏰ 预计耗时: 约 {total_scans * 2.5 // 60} 分钟")  # 增加时间预估
+    st.warning(f"⏰ 预计耗时: 约 {total_scans * 2.5 // 60} 分钟")
     
     if st.button("🚀 开始批量完整扫描", type="primary", use_container_width=True):
         if not selected_timeframes or not selected_kline_counts:
             st.error("请先选择时间框架和K线数量")
         else:
-            results = scanner.run_complete_scan(symbols_to_scan, selected_timeframes, selected_kline_counts)
+            # 确保传入正确的symbols列表
+            with st.spinner('批量扫描中，请耐心等待...'):
+                results = scanner.run_complete_scan(symbols_to_scan, selected_timeframes, selected_kline_counts)
             
             if results:
                 st.success(f"🎉 批量扫描完成! 发现 {len(results)} 个有效形态")
@@ -1104,6 +1110,11 @@ else:
                     avg_score = np.mean([r['score'] for r in results])
                     st.metric("平均置信度", f"{avg_score:.1f}%")
                 
+                # 显示扫描的币种范围
+                scanned_symbols = list(set([r['symbol'] for r in results]))
+                if scanned_symbols:
+                    st.info(f"📊 扫描币种范围: 从 {scanned_symbols[0]} 到 {scanned_symbols[-1]}")
+                
                 # 显示所有结果
                 for i, result in enumerate(results):
                     with st.expander(f"{i+1}. {result['symbol']} - {result['timeframe']} - {result['pattern']} (得分: {result['score']}%)", expanded=i<3):
@@ -1117,7 +1128,7 @@ else:
 if scanner.scan_results:
     st.sidebar.markdown("### 📜 最近扫描结果")
     
-    recent_results = scanner.scan_results[-10:]  # 显示最近10个结果
+    recent_results = scanner.scan_results[-10:]
     for i, result in enumerate(reversed(recent_results)):
         with st.sidebar.expander(f"{result['symbol']} - {result['pattern']}", expanded=False):
             st.write(f"时间框架: {result['timeframe']}")
