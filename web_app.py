@@ -47,7 +47,7 @@ class StrictPatternScanner:
     def __init__(self):
         self.base_url = "https://api.gateio.ws/api/v4"
         # 使用指定的104个币种列表
-        self.volume_symbols = self.get_specified_symbols()
+        self.specified_symbols = self.get_specified_symbols()
         self.all_timeframes = ["15m", "1h", "4h", "1d"]
         self.all_kline_counts = [200, 400]
         self.pattern_scores = {
@@ -86,6 +86,11 @@ class StrictPatternScanner:
             "JUPUSDT", "SOPHUSDT", "KSMUSDT", "WUSDT"
         ]
         return specified_symbols
+
+    @property
+    def volume_symbols(self):
+        """确保只返回指定的104个币种"""
+        return self.specified_symbols
 
     def save_chart_to_cache(self, symbol, timeframe, pattern_type, kline_count, chart_buf):
         """保存图表到缓存"""
@@ -911,6 +916,14 @@ selected_kline_counts = st.sidebar.multiselect(
 # 显示当前币种列表信息
 st.sidebar.markdown("### 📊 币种列表信息")
 st.sidebar.write(f"当前币种列表数量: {len(scanner.volume_symbols)}")
+
+# 显示币种列表
+with st.sidebar.expander("查看104个币种列表"):
+    # 分列显示币种
+    cols = st.columns(3)
+    for i, symbol in enumerate(scanner.volume_symbols):
+        with cols[i % 3]:
+            st.write(f"{i+1}. {symbol}")
 
 # 历史记录管理
 st.sidebar.markdown("### 📋 历史记录管理")
