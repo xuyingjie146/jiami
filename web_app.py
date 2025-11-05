@@ -37,7 +37,7 @@ st.markdown("""
 <ul style="color:#333;">
 <li><b>严格验证</b>: 需要3个高点和2个低点依次出现</li>
 <li><b>精确趋势线</b>: 所有摆动点必须在趋势线上 (R²>0.95)</li>
-<li><b>指定币种</b>: 扫描104个精选加密货币</li>
+<li><b>指定币种</b>: 扫描206个精选加密货币</li>
 <li><b>图表缓存</b>: 历史结果可重复查看</li>
 </ul>
 </div>
@@ -46,7 +46,7 @@ st.markdown("""
 class StrictPatternScanner:
     def __init__(self):
         self.base_url = "https://api.gateio.ws/api/v4"
-        # 使用指定的104个币种列表
+        # 使用指定的206个币种列表
         self.specified_symbols = self.get_specified_symbols()
         self.all_timeframes = ["15m", "1h", "4h", "1d"]
         self.all_kline_counts = [200, 400]
@@ -61,35 +61,56 @@ class StrictPatternScanner:
         self.chart_cache = {}  # 图表缓存
 
     def get_specified_symbols(self):
-        """使用指定的104个币种列表"""
+        """使用指定的206个币种列表"""
         specified_symbols = [
-            "ETHUSDT", "BTCUSDT", "SOLUSDT", "DOGEUSDT", "ZKUSDT",
-            "ASTERUSDT", "XRPUSDT", "JELLYJELLYUSDT", "PUMPUSDT", "HYPEUSDT",
-            "VIRTUALUSDT", "LABUSDT", "BNBUSDT", "TRUMPUSDT", "MINAUSDT",
-            "PEPEUSDT", "LINKUSDT", "XPLUSDT", "FILUSDT", "LTCUSDT",
-            "ICPUSDT", "SUIUSDT", "COAIUSDT", "AAVEUSDT", "ADAUSDT",
-            "BCHUSDT", "XAUTUSDT", "YBUSDT", "TAOUSDT", "LPTUSDT",
-            "OKBUSDT", "WLDUSDT", "ATUSDT", "HUSDT", "SNXUSDT",
-            "GIGGLEUSDT", "PENGUUSDT", "AVAXUSDT", "STRKUSDT", "CRVUSDT",
-            "PIGGYUSDT", "WLFIUSDT", "AI16ZUSDT", "CCUSDT", "AUCTIONUSDT",
-            "ENAUSDT", "HBARUSDT", "UNIUSDT", "NMRUSDT", "WIFUSDT",
-            "KGENUSDT", "DOTUSDT", "OGUSDT", "AVNTUSDT", "KITEUSDT",
-            "OPUSDT", "ETHFIUSDT", "AIXBTUSDT", "LINEAUSDT", "BIOUSDT",
-            "APRUSDT", "ETCUSDT", "ARBUSDT", "NEARUSDT", "SHIBUSDT",
-            "IPUSDT", "USELESSUSDT", "APTUSDT", "CELOUSDT", "BONKUSDT",
-            "LDOUSDT", "DYDXUSDT", "ARUSDT", "ORDIUSDT", "EIGENUSDT",
-            "OLUSDT", "MERLUSDT", "TIAUSDT", "BLUAIUSDT", "TRXUSDT",
-            "ONDOUSDT", "BATUSDT", "TONUSDT", "FARTCOINUSDT", "METUSDT",
-            "ZORAUSDT", "XLMUSDT", "DOODUSDT", "YGGUSDT", "KAITOUSDT",
-            "PNUTUSDT", "MOODENGUSDT", "ENSOUSDT", "RECALLUSDT", "TRBUSDT",
-            "CFXUSDT", "FLOKIUSDT", "ATOMUSDT", "ZBTUSDT", "INJUSDT",
-            "JUPUSDT", "SOPHUSDT", "KSMUSDT", "WUSDT"
+            "BTCUSDT", "ETHUSDT", "XRPUSDT", "BNBUSDT", "SOLUSDT",
+            "USDCUSDT", "TRXUSDT", "DOGEUSDT", "ADAUSDT", "HYPEUSDT",
+            "LINKUSDT", "BCHUSDT", "XLMUSDT", "SUIUSDT", "HBARUSDT",
+            "AVAXUSDT", "LTCUSDT", "SHIBUSDT", "TONUSDT", "CROUSDT",
+            "DOTUSDT", "UNIUSDT", "WLFUSDT", "AAVEUSDT", "ICPUSDT",
+            "OKBUSDT", "ENAUSDT", "PEPEUSDT", "NEARUSDT", "ETCUSDT",
+            "ASTERUSDT", "XAUTUSDT", "ONDOUSDT", "APTUSDT", "POLUSDT",
+            "WLDUSDT", "ARBUSDT", "TRUMPUSDT", "PUMPUSDT", "ALGOUSDT",
+            "SKYUSDT", "ATOMUSDT", "IPUSDT", "JUPUSDT", "FILUSDT",
+            "RENDERUSDT", "PENGUUSDT", "BONKUSDT", "VIRTUALUSDT", "MORPHUSDT",
+            "IMXUSDT", "OPUSDT", "TIAUSDT", "LDOUSDT", "STXUSDT",
+            "INJUSDT", "CRVUSDT", "GRTUSDT", "FLOKIUSDT", "XTZUSDT",
+            "IOTAUSDT", "XPLUSDT", "ETHFIUSDT", "STRKUSDT", "SUSUSDT",
+            "CFXUSDT", "PENDLEUSDT", "ZKUSDT", "SANDUSDT", "ENSUSDT",
+            "WIFUSDT", "THETAUSDT", "GALAUSDT", "AUSDTUSDT", "MANAUSDT",
+            "FLOWUSDT", "RAYUSDT", "MMTUSDT", "NEOUSDT", "EIGENUSDT",
+            "APEUSDT", "MERLUSDT", "JTOUSDT", "COMPUSDT", "ARUSDT",
+            "SNXUSDT", "BATUSDT", "CHZUSDT", "WUSDT", "RSRUSDT",
+            "ZORAUSDT", "EGLDUSDT", "LPTUSDT", "DYDXUSDT", "KAITOUSDT",
+            "1INCHUSDT", "AXSUSDT", "BERAUSDT", "CTCUSDT", "COREUSDT",
+            "KMNOUSDT", "LINEAUSDT", "SAHARAUSDT", "QTUMUSDT", "GLMUSDT",
+            "KITEUSDT", "METUSDT", "ZRXUSDT", "MINAUSDT", "ZROUSDT",
+            "KSMUSDT", "BARDUSDT", "CVXUSDT", "ARKMUSDT", "MOVEUSDT",
+            "YFIUSDT", "RVNUSDT", "GASUSDT", "AVNTUSDT", "BIOUSDT",
+            "ZILUSDT", "MEWUSDT", "CELOUSDT", "TURBOUSDT", "PROVEUSDT",
+            "FXSUSDT", "PNUTUSDT", "BLURUSDT", "OMUSDT", "NMRUSDT",
+            "GMXUSDT", "MOODENGUSDT", "ORDIUSDT", "SUSHIUSDT", "UMAUSDT",
+            "MEMEUSDT", "ETHWUSDT", "ICXUSDT", "API3USDT", "BANDUSDT",
+            "MASKUSDT", "LRCUSDT", "ONEUSDT", "ONTUSDT", "ENJUSDT",
+            "YGGUSDT", "GMTUSDT", "MEUSDT", "NOTUSDT", "BABYUSDT",
+            "NEIROUSDT", "TRBUSDT", "AIXBTUSDT", "WOOUSDT", "BICOUSDT",
+            "SPKUSDT", "DEGENUSDT", "BOMEUSDT", "BNTUSDT", "IOSTUSDT",
+            "LUNAUSDT", "ZENTUSDT", "METISUSDT", "ACHUSDT", "PEOPLEUSDT",
+            "YBUSDT", "DOODUSDT", "AEVUSDT", "LQTYUSDT", "AUCTIONUSDT",
+            "GOATUSDT", "SOPHUSDT", "LAYERUSDT", "SATSUSDT", "SONICUSDT",
+            "CVCUSDT", "ANIMEUSDT", "JOEUSDT", "MAGICUSDT", "HUMAUSDT",
+            "CETUSUSDT", "CATUSDT", "AGLDUSDT", "SSVUSDT", "HMSTRUSDT",
+            "WCTUSDT", "PRCLUSDT", "OLUSDT", "RESOLVUSDT", "ACTUSDT",
+            "CATIUSDT", "PROMPTUSDT", "PARTIUSDT", "POPCATUSDT", "BRETTUSDT",
+            "TAOUSDT", "GRASSUSDT", "VANAUSDT", "AI16ZUSDT", "FARTCOINUSDT",
+            "SOLVUSDT", "COOKIEUSDT", "SHELLUSDT", "GPSUSDT", "JELLYJELLYUSDT",
+            "INITUSDT"
         ]
         return specified_symbols
 
     @property
     def volume_symbols(self):
-        """确保只返回指定的104个币种"""
+        """确保只返回指定的206个币种"""
         return self.specified_symbols
 
     def save_chart_to_cache(self, symbol, timeframe, pattern_type, kline_count, chart_buf):
@@ -895,7 +916,7 @@ st.sidebar.title("⚙️ 严格模式扫描设置")
 
 # 扫描模式选择 - 只保留批量扫描选项
 scan_mode = st.sidebar.radio("选择扫描模式", 
-                           ["批量完整扫描前50", "批量完整扫描全部(104)"])
+                           ["批量完整扫描前50", "批量完整扫描全部(206)"])
 
 # 时间框架选择 - 多选
 st.sidebar.markdown("### 📊 时间框架选择")
@@ -918,7 +939,7 @@ st.sidebar.markdown("### 📊 币种列表信息")
 st.sidebar.write(f"当前币种列表数量: {len(scanner.volume_symbols)}")
 
 # 显示币种列表
-with st.sidebar.expander("查看104个币种列表"):
+with st.sidebar.expander("查看206个币种列表"):
     # 分列显示币种
     cols = st.columns(3)
     for i, symbol in enumerate(scanner.volume_symbols):
@@ -1007,7 +1028,7 @@ st.header("📊 批量完整扫描")
 # 确保使用正确的limit
 if scan_mode == "批量完整扫描前50":
     limit = 50
-else:  # 批量完整扫描全部(104)
+else:  # 批量完整扫描全部(206)
     limit = len(scanner.volume_symbols)
     
 symbols_to_scan = scanner.volume_symbols[:limit]
@@ -1080,7 +1101,7 @@ with st.sidebar.expander("📖 严格模式说明", expanded=False):
     - 📊 使用线性回归计算精确趋势线
     
     **扫描币种:**
-    - 📊 扫描指定的104个精选加密货币
+    - 📊 扫描指定的206个精选加密货币
     - ⏰ 批量扫描需要较长时间
     - 💾 建议分批扫描重要币种
     
@@ -1094,7 +1115,7 @@ with st.sidebar.expander("📖 严格模式说明", expanded=False):
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>"
-    "加密货币形态扫描器 - 严格模式 | 扫描104个指定加密货币"
+    "加密货币形态扫描器 - 严格模式 | 扫描206个指定加密货币"
     "</div>",
     unsafe_allow_html=True
 )
