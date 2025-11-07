@@ -46,7 +46,7 @@ st.markdown("""
 class StrictPatternScanner:
     def __init__(self):
         self.base_url = "https://api.gateio.ws/api/v4"
-        # 使用指定的206个币种列表
+        # 使用指定的206个币种列表，与命令行版本保持一致
         self.specified_symbols = self.get_specified_symbols()
         self.all_timeframes = ["15m", "1h", "4h", "1d"]
         self.all_kline_counts = [200, 400]
@@ -61,50 +61,50 @@ class StrictPatternScanner:
         self.chart_cache = {}  # 图表缓存
 
     def get_specified_symbols(self):
-        """使用指定的206个币种列表"""
+        """使用指定的206个币种列表 - 与命令行版本保持一致"""
         specified_symbols = [
-            "BTCUSDT", "ETHUSDT", "XRPUSDT", "BNBUSDT", "SOLUSDT",
-            "USDCUSDT", "TRXUSDT", "DOGEUSDT", "ADAUSDT", "HYPEUSDT",
-            "LINKUSDT", "BCHUSDT", "XLMUSDT", "SUIUSDT", "HBARUSDT",
-            "AVAXUSDT", "LTCUSDT", "SHIBUSDT", "TONUSDT", "CROUSDT",
-            "DOTUSDT", "UNIUSDT", "WLFUSDT", "AAVEUSDT", "ICPUSDT",
-            "OKBUSDT", "ENAUSDT", "PEPEUSDT", "NEARUSDT", "ETCUSDT",
-            "ASTERUSDT", "XAUTUSDT", "ONDOUSDT", "APTUSDT", "POLUSDT",
-            "WLDUSDT", "ARBUSDT", "TRUMPUSDT", "PUMPUSDT", "ALGOUSDT",
-            "SKYUSDT", "ATOMUSDT", "IPUSDT", "JUPUSDT", "FILUSDT",
-            "RENDERUSDT", "PENGUUSDT", "BONKUSDT", "VIRTUALUSDT", "MORPHUSDT",
-            "IMXUSDT", "OPUSDT", "TIAUSDT", "LDOUSDT", "STXUSDT",
-            "INJUSDT", "CRVUSDT", "GRTUSDT", "FLOKIUSDT", "XTZUSDT",
-            "IOTAUSDT", "XPLUSDT", "ETHFIUSDT", "STRKUSDT", "SUSUSDT",
-            "CFXUSDT", "PENDLEUSDT", "ZKUSDT", "SANDUSDT", "ENSUSDT",
-            "WIFUSDT", "THETAUSDT", "GALAUSDT", "AUSDTUSDT", "MANAUSDT",
-            "FLOWUSDT", "RAYUSDT", "MMTUSDT", "NEOUSDT", "EIGENUSDT",
-            "APEUSDT", "MERLUSDT", "JTOUSDT", "COMPUSDT", "ARUSDT",
-            "SNXUSDT", "BATUSDT", "CHZUSDT", "WUSDT", "RSRUSDT",
-            "ZORAUSDT", "EGLDUSDT", "LPTUSDT", "DYDXUSDT", "KAITOUSDT",
-            "1INCHUSDT", "AXSUSDT", "BERAUSDT", "CTCUSDT", "COREUSDT",
-            "KMNOUSDT", "LINEAUSDT", "SAHARAUSDT", "QTUMUSDT", "GLMUSDT",
-            "KITEUSDT", "METUSDT", "ZRXUSDT", "MINAUSDT", "ZROUSDT",
-            "KSMUSDT", "BARDUSDT", "CVXUSDT", "ARKMUSDT", "MOVEUSDT",
-            "YFIUSDT", "RVNUSDT", "GASUSDT", "AVNTUSDT", "BIOUSDT",
-            "ZILUSDT", "MEWUSDT", "CELOUSDT", "TURBOUSDT", "PROVEUSDT",
-            "FXSUSDT", "PNUTUSDT", "BLURUSDT", "OMUSDT", "NMRUSDT",
-            "GMXUSDT", "MOODENGUSDT", "ORDIUSDT", "SUSHIUSDT", "UMAUSDT",
-            "MEMEUSDT", "ETHWUSDT", "ICXUSDT", "API3USDT", "BANDUSDT",
-            "MASKUSDT", "LRCUSDT", "ONEUSDT", "ONTUSDT", "ENJUSDT",
-            "YGGUSDT", "GMTUSDT", "MEUSDT", "NOTUSDT", "BABYUSDT",
-            "NEIROUSDT", "TRBUSDT", "AIXBTUSDT", "WOOUSDT", "BICOUSDT",
-            "SPKUSDT", "DEGENUSDT", "BOMEUSDT", "BNTUSDT", "IOSTUSDT",
-            "LUNAUSDT", "ZENTUSDT", "METISUSDT", "ACHUSDT", "PEOPLEUSDT",
-            "YBUSDT", "DOODUSDT", "AEVUSDT", "LQTYUSDT", "AUCTIONUSDT",
-            "GOATUSDT", "SOPHUSDT", "LAYERUSDT", "SATSUSDT", "SONICUSDT",
-            "CVCUSDT", "ANIMEUSDT", "JOEUSDT", "MAGICUSDT", "HUMAUSDT",
-            "CETUSUSDT", "CATUSDT", "AGLDUSDT", "SSVUSDT", "HMSTRUSDT",
-            "WCTUSDT", "PRCLUSDT", "OLUSDT", "RESOLVUSDT", "ACTUSDT",
-            "CATIUSDT", "PROMPTUSDT", "PARTIUSDT", "POPCATUSDT", "BRETTUSDT",
-            "TAOUSDT", "GRASSUSDT", "VANAUSDT", "AI16ZUSDT", "FARTCOINUSDT",
-            "SOLVUSDT", "COOKIEUSDT", "SHELLUSDT", "GPSUSDT", "JELLYJELLYUSDT",
-            "INITUSDT"
+            "BTC_USDT", "ETH_USDT", "XRP_USDT", "BNB_USDT", "SOL_USDT",
+            "USDC_USDT", "TRX_USDT", "DOGE_USDT", "ADA_USDT", "HYPE_USDT",
+            "LINK_USDT", "BCH_USDT", "XLM_USDT", "SUI_USDT", "HBAR_USDT",
+            "AVAX_USDT", "LTC_USDT", "SHIB_USDT", "TON_USDT", "CRO_USDT",
+            "DOT_USDT", "UNI_USDT", "WLF_USDT", "AAVE_USDT", "ICP_USDT",
+            "OKB_USDT", "ENA_USDT", "PEPE_USDT", "NEAR_USDT", "ETC_USDT",
+            "ASTER_USDT", "XAUT_USDT", "ONDO_USDT", "APT_USDT", "POL_USDT",
+            "WLD_USDT", "ARB_USDT", "TRUMP_USDT", "PUMP_USDT", "ALGO_USDT",
+            "SKY_USDT", "ATOM_USDT", "IP_USDT", "JUP_USDT", "FIL_USDT",
+            "RENDER_USDT", "PENGU_USDT", "BONK_USDT", "VIRTUAL_USDT", "MORPH_USDT",
+            "IMX_USDT", "OP_USDT", "TIA_USDT", "LDO_USDT", "STX_USDT",
+            "INJ_USDT", "CRV_USDT", "GRT_USDT", "FLOKI_USDT", "XTZ_USDT",
+            "IOTA_USDT", "XPL_USDT", "ETHFI_USDT", "STRK_USDT", "SUS_USDT",
+            "CFX_USDT", "PENDLE_USDT", "ZK_USDT", "SAND_USDT", "ENS_USDT",
+            "WIF_USDT", "THETA_USDT", "GALA_USDT", "AUSDT_USDT", "MANA_USDT",
+            "FLOW_USDT", "RAY_USDT", "MMT_USDT", "NEO_USDT", "EIGEN_USDT",
+            "APE_USDT", "MERL_USDT", "JTO_USDT", "COMP_USDT", "AR_USDT",
+            "SNX_USDT", "BAT_USDT", "CHZ_USDT", "W_USDT", "RSR_USDT",
+            "ZORA_USDT", "EGLD_USDT", "LPT_USDT", "DYDX_USDT", "KAITO_USDT",
+            "1INCH_USDT", "AXS_USDT", "BERA_USDT", "CTC_USDT", "CORE_USDT",
+            "KMNO_USDT", "LINEA_USDT", "SAHARA_USDT", "QTUM_USDT", "GLM_USDT",
+            "KITE_USDT", "MET_USDT", "ZRX_USDT", "MINA_USDT", "ZRO_USDT",
+            "KSM_USDT", "BARD_USDT", "CVX_USDT", "ARKM_USDT", "MOVE_USDT",
+            "YFI_USDT", "RVN_USDT", "GAS_USDT", "AVNT_USDT", "BIO_USDT",
+            "ZIL_USDT", "MEW_USDT", "CELO_USDT", "TURBO_USDT", "PROVE_USDT",
+            "FXS_USDT", "PNUT_USDT", "BLUR_USDT", "OM_USDT", "NMR_USDT",
+            "GMX_USDT", "MOODENG_USDT", "ORDI_USDT", "SUSHI_USDT", "UMA_USDT",
+            "MEME_USDT", "ETHW_USDT", "ICX_USDT", "API3_USDT", "BAND_USDT",
+            "MASK_USDT", "LRC_USDT", "ONE_USDT", "ONT_USDT", "ENJ_USDT",
+            "YGG_USDT", "GMT_USDT", "ME_USDT", "NOT_USDT", "BABY_USDT",
+            "NEIRO_USDT", "TRB_USDT", "AIXBT_USDT", "WOO_USDT", "BICO_USDT",
+            "SPK_USDT", "DEGEN_USDT", "BOME_USDT", "BNT_USDT", "IOST_USDT",
+            "LUNA_USDT", "ZENT_USDT", "METIS_USDT", "ACH_USDT", "PEOPLE_USDT",
+            "YB_USDT", "DOOD_USDT", "AEV_USDT", "LQTY_USDT", "AUCTION_USDT",
+            "GOAT_USDT", "SOPH_USDT", "LAYER_USDT", "SATS_USDT", "SONIC_USDT",
+            "CVC_USDT", "ANIME_USDT", "JOE_USDT", "MAGIC_USDT", "HUMA_USDT",
+            "CETUS_USDT", "CAT_USDT", "AGLD_USDT", "SSV_USDT", "HMSTR_USDT",
+            "WCT_USDT", "PRCL_USDT", "OL_USDT", "RESOLV_USDT", "ACT_USDT",
+            "CATI_USDT", "PROMPT_USDT", "PARTI_USDT", "POPCAT_USDT", "BRETT_USDT",
+            "TAO_USDT", "GRASS_USDT", "VANA_USDT", "AI16Z_USDT", "FARTCOIN_USDT",
+            "SOLV_USDT", "COOKIE_USDT", "SHELL_USDT", "GPS_USDT", "JELLYJELLY_USDT",
+            "INIT_USDT"
         ]
         return specified_symbols
 
@@ -145,14 +145,11 @@ class StrictPatternScanner:
         else:
             st.warning("图表数据已过期，请重新扫描")
 
-    def get_spot_candle_data(self, symbol="BTCUSDT", interval="15m", limit=400):
-        """获取现货K线数据"""
+    def get_spot_candle_data(self, symbol="BTC_USDT", interval="15m", limit=400):
+        """获取现货K线数据 - 与命令行版本保持一致"""
         try:
-            # 确保符号格式正确（有些可能需要下划线）
+            # 直接使用symbol，因为现在符号格式已经是正确的
             formatted_symbol = symbol
-            if "_" not in symbol:
-                # 假设所有币种都是XXXUSDT格式，添加下划线
-                formatted_symbol = symbol.replace("USDT", "_USDT")
             
             url = f"{self.base_url}/spot/candlesticks"
             params = {
@@ -211,13 +208,13 @@ class StrictPatternScanner:
             return None
 
     def generate_realistic_data(self, symbol, interval, limit=400):
-        """生成真实模拟数据"""
+        """生成真实模拟数据 - 与命令行版本保持一致"""
         # 为一些主要币种设置更真实的价格
         real_prices = {
-            "BTCUSDT": 45000, "ETHUSDT": 2500, "BNBUSDT": 320,
-            "SOLUSDT": 110, "XRPUSDT": 0.62, "ADAUSDT": 0.48,
-            "DOGEUSDT": 0.12, "AVAXUSDT": 35, "DOTUSDT": 7.5,
-            "LINKUSDT": 14, "LTCUSDT": 68, "BCHUSDT": 240
+            "BTC_USDT": 45000, "ETH_USDT": 2500, "BNB_USDT": 320,
+            "SOL_USDT": 110, "XRP_USDT": 0.62, "ADA_USDT": 0.48,
+            "DOGE_USDT": 0.12, "AVAX_USDT": 35, "DOT_USDT": 7.5,
+            "LINK_USDT": 14, "LTC_USDT": 68, "BCH_USDT": 240
         }
         
         base_price = real_prices.get(symbol, 10)
